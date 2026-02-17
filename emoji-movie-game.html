@@ -1,0 +1,762 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>🎬 EmojiFlicks</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:ital,wght@0,300;0,400;0,600;1,300&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0a0f;
+    --surface: #12121a;
+    --card: #1a1a26;
+    --border: #2a2a3e;
+    --gold: #f5c842;
+    --gold-dim: #a8882d;
+    --red: #e63b3b;
+    --green: #3be67a;
+    --text: #e8e8f0;
+    --muted: #6b6b88;
+    --accent: #7b5ea7;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 0 16px 60px;
+    position: relative;
+    overflow-x: hidden;
+  }
+
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background: radial-gradient(ellipse 80% 60% at 50% -10%, rgba(123,94,167,0.18) 0%, transparent 70%);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* Film grain */
+  body::after {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
+    pointer-events: none;
+    opacity: 0.4;
+    z-index: 0;
+  }
+
+  header {
+    width: 100%;
+    max-width: 700px;
+    padding: 32px 0 8px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    position: relative;
+    z-index: 1;
+  }
+
+  .logo {
+    font-family: 'Bebas Neue', cursive;
+    font-size: clamp(42px, 9vw, 72px);
+    letter-spacing: 6px;
+    color: var(--gold);
+    text-shadow: 0 0 40px rgba(245,200,66,0.3), 0 2px 0 rgba(0,0,0,0.5);
+    line-height: 1;
+  }
+
+  .logo span { color: var(--text); }
+
+  .tagline {
+    font-size: 13px;
+    color: var(--muted);
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    margin-top: 6px;
+  }
+
+  /* Score bar */
+  .score-bar {
+    width: 100%;
+    max-width: 700px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 16px 0;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 24px;
+    position: relative;
+    z-index: 1;
+  }
+
+  .score-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+  }
+
+  .score-label {
+    font-size: 10px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+
+  .score-value {
+    font-family: 'Bebas Neue', cursive;
+    font-size: 28px;
+    color: var(--gold);
+    line-height: 1;
+  }
+
+  .score-value.streak { color: var(--green); }
+  .score-value.round { color: var(--text); }
+
+  /* Game card */
+  .game-card {
+    width: 100%;
+    max-width: 700px;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 32px;
+    position: relative;
+    z-index: 1;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.4);
+  }
+
+  .difficulty-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 11px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    font-weight: 600;
+    margin-bottom: 20px;
+  }
+
+  .diff-easy { background: rgba(59,230,122,0.12); color: var(--green); border: 1px solid rgba(59,230,122,0.25); }
+  .diff-medium { background: rgba(245,200,66,0.12); color: var(--gold); border: 1px solid rgba(245,200,66,0.25); }
+  .diff-hard { background: rgba(230,59,59,0.12); color: var(--red); border: 1px solid rgba(230,59,59,0.25); }
+  .diff-expert { background: rgba(123,94,167,0.2); color: #b48ae8; border: 1px solid rgba(123,94,167,0.4); }
+
+  .points-badge {
+    float: right;
+    font-family: 'Bebas Neue', cursive;
+    font-size: 22px;
+    color: var(--muted);
+  }
+
+  .points-badge span { color: var(--gold); }
+
+  .emoji-display {
+    font-size: clamp(36px, 9vw, 60px);
+    text-align: center;
+    padding: 28px 0;
+    letter-spacing: 8px;
+    line-height: 1.3;
+    animation: fadeIn 0.5s ease;
+  }
+
+  @keyframes fadeIn {
+    from { opacity: 0; transform: scale(0.95); }
+    to { opacity: 1; transform: scale(1); }
+  }
+
+  .hint-text {
+    text-align: center;
+    color: var(--muted);
+    font-size: 13px;
+    margin-bottom: 24px;
+    font-style: italic;
+  }
+
+  /* Input area */
+  .input-row {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 14px;
+  }
+
+  .guess-input {
+    flex: 1;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 14px 18px;
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 16px;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+
+  .guess-input:focus { border-color: var(--accent); }
+  .guess-input::placeholder { color: var(--muted); }
+
+  .guess-input.correct { border-color: var(--green); background: rgba(59,230,122,0.06); }
+  .guess-input.wrong { border-color: var(--red); background: rgba(230,59,59,0.06); }
+
+  btn-group { display: flex; gap: 10px; }
+
+  button {
+    padding: 14px 22px;
+    border: none;
+    border-radius: 10px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s;
+    letter-spacing: 0.5px;
+  }
+
+  .btn-primary {
+    background: var(--gold);
+    color: #0a0a0f;
+    min-width: 100px;
+  }
+  .btn-primary:hover { background: #f7d455; transform: translateY(-1px); }
+  .btn-primary:active { transform: translateY(0); }
+
+  .btn-secondary {
+    background: var(--surface);
+    color: var(--muted);
+    border: 1px solid var(--border);
+  }
+  .btn-secondary:hover { color: var(--text); border-color: var(--muted); }
+
+  .btn-hint {
+    background: rgba(123,94,167,0.15);
+    color: #b48ae8;
+    border: 1px solid rgba(123,94,167,0.3);
+    font-size: 13px;
+  }
+  .btn-hint:hover { background: rgba(123,94,167,0.25); }
+  .btn-hint:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  .btn-skip {
+    background: transparent;
+    color: var(--muted);
+    border: 1px solid var(--border);
+    font-size: 13px;
+  }
+  .btn-skip:hover { color: var(--text); border-color: var(--muted); }
+
+  /* Feedback */
+  .feedback {
+    text-align: center;
+    font-size: 15px;
+    min-height: 22px;
+    font-weight: 600;
+    animation: feedbackPop 0.3s ease;
+  }
+
+  @keyframes feedbackPop {
+    0% { transform: scale(0.9); opacity: 0; }
+    60% { transform: scale(1.05); }
+    100% { transform: scale(1); opacity: 1; }
+  }
+
+  .feedback.correct { color: var(--green); }
+  .feedback.wrong { color: var(--red); }
+  .feedback.reveal { color: var(--muted); }
+
+  /* Hint box */
+  .hint-box {
+    background: rgba(123,94,167,0.1);
+    border: 1px solid rgba(123,94,167,0.25);
+    border-radius: 10px;
+    padding: 12px 16px;
+    margin-bottom: 14px;
+    font-size: 13px;
+    color: #c4a9f0;
+    display: none;
+    animation: fadeIn 0.3s ease;
+  }
+
+  .hint-box.visible { display: block; }
+
+  /* Controls row */
+  .controls-row {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+  }
+
+  /* Progress */
+  .progress-row {
+    display: flex;
+    gap: 6px;
+    justify-content: center;
+    margin-top: 24px;
+    position: relative;
+    z-index: 1;
+  }
+
+  .progress-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--border);
+    transition: background 0.3s;
+  }
+
+  .progress-dot.done { background: var(--gold-dim); }
+  .progress-dot.current { background: var(--gold); box-shadow: 0 0 8px var(--gold); }
+
+  /* History */
+  .history {
+    width: 100%;
+    max-width: 700px;
+    margin-top: 28px;
+    position: relative;
+    z-index: 1;
+  }
+
+  .history-title {
+    font-size: 10px;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 12px;
+  }
+
+  .history-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 16px;
+    background: var(--surface);
+    border-radius: 10px;
+    margin-bottom: 6px;
+    font-size: 13px;
+    animation: slideIn 0.3s ease;
+  }
+
+  @keyframes slideIn {
+    from { opacity: 0; transform: translateX(-10px); }
+    to { opacity: 1; transform: translateX(0); }
+  }
+
+  .history-emoji { font-size: 18px; min-width: 36px; }
+  .history-movie { flex: 1; color: var(--text); font-weight: 600; }
+  .history-result { font-size: 12px; }
+  .history-result.correct { color: var(--green); }
+  .history-result.skipped { color: var(--muted); }
+  .history-points { font-family: 'Bebas Neue', cursive; font-size: 18px; color: var(--gold); }
+
+  /* Game over */
+  .game-over {
+    text-align: center;
+    padding: 20px 0;
+  }
+
+  .game-over-title {
+    font-family: 'Bebas Neue', cursive;
+    font-size: 52px;
+    color: var(--gold);
+    letter-spacing: 4px;
+    line-height: 1;
+  }
+
+  .game-over-score {
+    font-family: 'Bebas Neue', cursive;
+    font-size: 80px;
+    color: var(--text);
+    line-height: 1;
+    margin: 8px 0;
+  }
+
+  .game-over-sub {
+    color: var(--muted);
+    font-size: 14px;
+    margin-bottom: 24px;
+  }
+
+  .btn-restart {
+    background: var(--gold);
+    color: #0a0a0f;
+    padding: 16px 40px;
+    font-size: 16px;
+    font-weight: 700;
+    border-radius: 12px;
+    letter-spacing: 1px;
+  }
+  .btn-restart:hover { background: #f7d455; transform: translateY(-2px); }
+
+  .rating {
+    font-size: 32px;
+    margin-bottom: 8px;
+  }
+
+  @media (max-width: 480px) {
+    .game-card { padding: 20px 16px; }
+    .score-bar { flex-wrap: wrap; gap: 12px; justify-content: center; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">Emoji<span>Flicks</span></div>
+  <div class="tagline">Guess the movie from the emojis</div>
+</header>
+
+<div class="score-bar">
+  <div class="score-item">
+    <div class="score-label">Score</div>
+    <div class="score-value" id="total-score">0</div>
+  </div>
+  <div class="score-item">
+    <div class="score-label">Round</div>
+    <div class="score-value round" id="round-num">1 / 10</div>
+  </div>
+  <div class="score-item">
+    <div class="score-label">Streak 🔥</div>
+    <div class="score-value streak" id="streak">0</div>
+  </div>
+  <div class="score-item">
+    <div class="score-label">Best Streak</div>
+    <div class="score-value" id="best-streak">0</div>
+  </div>
+</div>
+
+<div class="game-card" id="game-card">
+  <div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:8px;">
+    <div class="difficulty-badge" id="diff-badge">Easy</div>
+    <div class="points-badge">Worth <span id="points-worth">—</span> pts</div>
+  </div>
+
+  <div class="emoji-display" id="emoji-display">🎬</div>
+
+  <div class="hint-text" id="clue-type"></div>
+
+  <div class="hint-box" id="hint-box"></div>
+
+  <div class="input-row">
+    <input type="text" class="guess-input" id="guess-input" placeholder="Type your guess…" autocomplete="off" />
+    <button class="btn-primary" id="guess-btn" onclick="submitGuess()">Guess</button>
+  </div>
+
+  <div class="feedback" id="feedback"></div>
+
+  <div class="controls-row" style="margin-top:14px;">
+    <button class="btn-hint" id="hint-btn" onclick="showHint()">💡 Hint (−25%)</button>
+    <button class="btn-skip" onclick="skipMovie()">Skip →</button>
+  </div>
+</div>
+
+<div class="progress-row" id="progress-row"></div>
+
+<div class="history" id="history">
+  <div class="history-title">Answered</div>
+</div>
+
+<script>
+const MOVIES = [
+  // EASY — very popular, recent blockbusters (50 pts)
+  { title: "The Lion King", emojis: "🦁👑🌅", hint: "A young prince exiled from his kingdom must reclaim his throne.", points: 50, diff: "easy", clue: "Title clue" },
+  { title: "Frozen", emojis: "❄️👸🏔️⛄", hint: "A queen accidentally traps her kingdom in eternal winter.", points: 50, diff: "easy", clue: "Title + themes" },
+  { title: "Titanic", emojis: "🚢🧊💔🌊", hint: "An ill-fated ocean liner meets a tragic end in the North Atlantic.", points: 50, diff: "easy", clue: "Iconic scenes" },
+  { title: "Home Alone", emojis: "🏠😱👦🔫🎅", hint: "A kid defends his house from bumbling burglars at Christmas.", points: 50, diff: "easy", clue: "Plot clue" },
+  { title: "The Avengers", emojis: "🦸‍♂️🛡️⚡🔨🧲", hint: "Earth's mightiest heroes assemble to stop an alien invasion.", points: 50, diff: "easy", clue: "Character powers" },
+  { title: "Finding Nemo", emojis: "🐠🔍🌊🐙", hint: "A clownfish crosses the ocean to rescue his son.", points: 50, diff: "easy", clue: "Title clue" },
+  { title: "Toy Story", emojis: "🤠🚀👾🧸", hint: "A cowboy toy feels replaced when a space ranger arrives.", points: 50, diff: "easy", clue: "Character clues" },
+  { title: "Jurassic Park", emojis: "🦕🦖🌿🧬🚗", hint: "Scientists clone dinosaurs for a theme park that goes very wrong.", points: 50, diff: "easy", clue: "Themes + icons" },
+
+  // MEDIUM — popular classics and cult films (150 pts)
+  { title: "The Matrix", emojis: "💊🕶️💻🟢", hint: "A hacker discovers reality is a simulation controlled by machines.", points: 150, diff: "medium", clue: "Iconic symbols" },
+  { title: "Forrest Gump", emojis: "🏃‍♂️🍫🏓🪶", hint: "A slow-witted but kind-hearted man witnesses decades of American history.", points: 150, diff: "medium", clue: "Iconic props" },
+  { title: "The Shining", emojis: "🏨⛄🔪📺😱", hint: "A writer slowly goes mad while snowbound in an isolated hotel.", points: 150, diff: "medium", clue: "Plot + setting" },
+  { title: "Pulp Fiction", emojis: "💼🕺🩸💉☕", hint: "Interlocking stories of hitmen, gangsters, and a briefcase in LA.", points: 150, diff: "medium", clue: "Iconic scenes" },
+  { title: "Inception", emojis: "🌀💤🏙️🌪️🔫", hint: "A thief enters people's dreams to plant an idea.", points: 150, diff: "medium", clue: "Themes" },
+  { title: "Gladiator", emojis: "⚔️🦁🏟️🫅🩸", hint: "A Roman general becomes a slave gladiator seeking revenge.", points: 150, diff: "medium", clue: "Setting + plot" },
+  { title: "The Silence of the Lambs", emojis: "🦋🐑😷🕵️‍♀️", hint: "An FBI trainee enlists a cannibalistic genius to catch a serial killer.", points: 150, diff: "medium", clue: "Title + themes" },
+  { title: "Spirited Away", emojis: "👧🏮🐉♨️🍙", hint: "A girl gets trapped in a magical bathhouse for spirits.", points: 150, diff: "medium", clue: "Setting + themes" },
+  { title: "The Dark Knight", emojis: "🦇🃏🏙️💣😈", hint: "A masked vigilante faces a chaos-loving clown criminal mastermind.", points: 150, diff: "medium", clue: "Characters + tone" },
+  { title: "Goodfellas", emojis: "🤵💰🍝🔫🚬", hint: "A man rises through the ranks of the Italian-American mob.", points: 150, diff: "medium", clue: "Themes + style" },
+
+  // HARD — beloved but less mainstream (350 pts)
+  { title: "Parasite", emojis: "🏚️🏠🪨📦🪲", hint: "Two families from different classes become dangerously entangled.", points: 350, diff: "hard", clue: "Themes + symbols" },
+  { title: "No Country for Old Men", emojis: "💰🌵💼🔩😐", hint: "A hunter finds drug money and is stalked by an unstoppable killer.", points: 350, diff: "hard", clue: "Plot + weapon" },
+  { title: "There Will Be Blood", emojis: "🛢️🙏⛏️🔔😡", hint: "A ruthless oilman and a charismatic preacher clash in early California.", points: 350, diff: "hard", clue: "Title + themes" },
+  { title: "Pan's Labyrinth", emojis: "🌿🐸👁️🧚🔑", hint: "A girl escapes postwar Spain through a dark fantasy labyrinth.", points: 350, diff: "hard", clue: "Creatures + setting" },
+  { title: "Drive", emojis: "🚗🌃🦂🔨💛", hint: "A quiet stuntman moonlights as a getaway driver and falls for his neighbor.", points: 350, diff: "hard", clue: "Symbols + tone" },
+  { title: "Mulholland Drive", emojis: "🛣️🌃🎭🔵🔑", hint: "An amnesiac woman and an aspiring actress unravel a mystery in Hollywood.", points: 350, diff: "hard", clue: "Title + symbols" },
+  { title: "Annihilation", emojis: "🌿🧬🐊✨🪞", hint: "A biologist enters a mysterious environmental disaster zone that bends reality.", points: 350, diff: "hard", clue: "Themes + setting" },
+  { title: "Hereditary", emojis: "🏠🕯️🔺👴🪕", hint: "A family unravels disturbing secrets after their grandmother's death.", points: 350, diff: "hard", clue: "Themes + symbol" },
+
+  // EXPERT — cult classics and obscure films (700 pts)
+  { title: "Primer", emojis: "📦⏰🧪🤵👔", hint: "Two engineers accidentally build a time machine in their garage.", points: 700, diff: "expert", clue: "Minimal plot clue" },
+  { title: "Aguirre, the Wrath of God", emojis: "🛶🌿😡🏔️🐒", hint: "A conquistador leads a doomed expedition down the Amazon River.", points: 700, diff: "expert", clue: "Title + setting" },
+  { title: "Stalker", emojis: "🚶‍♂️🌿🧱✝️🚂", hint: "A guide leads two men through a forbidden zone to a room granting wishes.", points: 700, diff: "expert", clue: "Themes + setting" },
+  { title: "The Holy Mountain", emojis: "⛰️🌀🔱💰🧙", hint: "A thief joins a mystic quest up a sacred mountain with allegorical figures.", points: 700, diff: "expert", clue: "Title + themes" },
+  { title: "Eraserhead", emojis: "💡🌑👶🎭🏭", hint: "A man living in an industrial wasteland must care for his severely deformed child.", points: 700, diff: "expert", clue: "Atmosphere + plot" },
+  { title: "Possession", emojis: "🥚🪓🧟‍♀️💔🚇", hint: "A couple's separation spirals into horror and supernatural obsession in Berlin.", points: 700, diff: "expert", clue: "Themes + icon" },
+  { title: "Sátántangó", emojis: "🌧️🕺💧🐱🌾", hint: "A seven-hour Hungarian epic about the collapse of a collective farm.", points: 700, diff: "expert", clue: "Setting + themes" },
+  { title: "Man Bites Dog", emojis: "🎥🔫📷😶🚐", hint: "A documentary crew follows a serial killer as they become complicit in his crimes.", points: 700, diff: "expert", clue: "Meta-premise" },
+];
+
+let queue = [];
+let currentIdx = 0;
+let totalScore = 0;
+let streak = 0;
+let bestStreak = 0;
+let hintUsed = false;
+let answered = false;
+const TOTAL_ROUNDS = 10;
+let history = [];
+
+function shuffle(arr) {
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
+}
+
+function buildQueue() {
+  // Pick 2-3 easy, 3 medium, 2-3 hard, 1-2 expert
+  const easy = shuffle(MOVIES.filter(m => m.diff === 'easy')).slice(0, 3);
+  const medium = shuffle(MOVIES.filter(m => m.diff === 'medium')).slice(0, 3);
+  const hard = shuffle(MOVIES.filter(m => m.diff === 'hard')).slice(0, 2);
+  const expert = shuffle(MOVIES.filter(m => m.diff === 'expert')).slice(0, 2);
+  return shuffle([...easy, ...medium, ...hard, ...expert]);
+}
+
+function normalize(str) {
+  return str.toLowerCase().replace(/[^a-z0-9\s]/g, '').replace(/\s+/g, ' ').trim();
+}
+
+function isClose(guess, answer) {
+  const g = normalize(guess);
+  const a = normalize(answer);
+  if (g === a) return true;
+  // Remove articles
+  const strip = s => s.replace(/^(the|a|an) /, '');
+  if (strip(g) === strip(a)) return true;
+  // Levenshtein for short answers
+  if (levenshtein(g, a) <= 2) return true;
+  return false;
+}
+
+function levenshtein(a, b) {
+  const m = a.length, n = b.length;
+  const dp = Array.from({length: m+1}, (_, i) => [i, ...Array(n).fill(0)]);
+  for (let j = 0; j <= n; j++) dp[0][j] = j;
+  for (let i = 1; i <= m; i++)
+    for (let j = 1; j <= n; j++)
+      dp[i][j] = a[i-1] === b[j-1] ? dp[i-1][j-1] : 1 + Math.min(dp[i-1][j-1], dp[i-1][j], dp[i][j-1]);
+  return dp[m][n];
+}
+
+function loadMovie() {
+  if (currentIdx >= TOTAL_ROUNDS) { endGame(); return; }
+  const movie = queue[currentIdx];
+  answered = false;
+  hintUsed = false;
+
+  document.getElementById('emoji-display').textContent = movie.emojis;
+  document.getElementById('clue-type').textContent = `Clue type: ${movie.clue}`;
+  document.getElementById('round-num').textContent = `${currentIdx + 1} / ${TOTAL_ROUNDS}`;
+  document.getElementById('points-worth').textContent = movie.points;
+  document.getElementById('feedback').textContent = '';
+  document.getElementById('feedback').className = 'feedback';
+  document.getElementById('guess-input').value = '';
+  document.getElementById('guess-input').className = 'guess-input';
+  document.getElementById('hint-box').textContent = '';
+  document.getElementById('hint-box').className = 'hint-box';
+  document.getElementById('hint-btn').disabled = false;
+
+  const badge = document.getElementById('diff-badge');
+  badge.textContent = { easy: '🟢 Easy', medium: '🟡 Medium', hard: '🔴 Hard', expert: '💀 Expert' }[movie.diff];
+  badge.className = 'difficulty-badge diff-' + movie.diff;
+
+  document.getElementById('guess-input').focus();
+  buildProgress();
+}
+
+function buildProgress() {
+  const row = document.getElementById('progress-row');
+  row.innerHTML = '';
+  for (let i = 0; i < TOTAL_ROUNDS; i++) {
+    const dot = document.createElement('div');
+    dot.className = 'progress-dot' + (i < currentIdx ? ' done' : i === currentIdx ? ' current' : '');
+    row.appendChild(dot);
+  }
+}
+
+function submitGuess() {
+  if (answered) { nextMovie(); return; }
+  const input = document.getElementById('guess-input');
+  const guess = input.value.trim();
+  if (!guess) return;
+
+  const movie = queue[currentIdx];
+  const fb = document.getElementById('feedback');
+
+  if (isClose(guess, movie.title)) {
+    const pts = hintUsed ? Math.round(movie.points * 0.75) : movie.points;
+    const bonusMult = streak >= 4 ? 1.5 : streak >= 2 ? 1.2 : 1;
+    const finalPts = Math.round(pts * bonusMult);
+    totalScore += finalPts;
+    streak++;
+    if (streak > bestStreak) bestStreak = streak;
+
+    input.className = 'guess-input correct';
+    fb.className = 'feedback correct';
+    let bonusText = bonusMult > 1 ? ` (🔥 ×${bonusMult} streak bonus!)` : '';
+    fb.textContent = `✅ Correct! +${finalPts} points${bonusText}`;
+    history.push({ movie: movie.title, emojis: movie.emojis, result: 'correct', pts: finalPts });
+
+    updateScore();
+    answered = true;
+    document.getElementById('guess-btn').textContent = 'Next →';
+    setTimeout(nextMovie, 1600);
+  } else {
+    input.className = 'guess-input wrong';
+    fb.className = 'feedback wrong';
+    fb.textContent = '❌ Not quite — try again!';
+    setTimeout(() => { input.className = 'guess-input'; }, 600);
+  }
+}
+
+function skipMovie() {
+  if (answered) { nextMovie(); return; }
+  const movie = queue[currentIdx];
+  streak = 0;
+  const fb = document.getElementById('feedback');
+  fb.className = 'feedback reveal';
+  fb.textContent = `⏭ Skipped. It was: ${movie.title}`;
+  document.getElementById('guess-input').className = 'guess-input';
+  history.push({ movie: movie.title, emojis: movie.emojis, result: 'skipped', pts: 0 });
+  updateScore();
+  answered = true;
+  document.getElementById('guess-btn').textContent = 'Next →';
+  setTimeout(nextMovie, 2000);
+}
+
+function showHint() {
+  if (hintUsed) return;
+  const movie = queue[currentIdx];
+  hintUsed = true;
+  const hintBox = document.getElementById('hint-box');
+  hintBox.textContent = `💡 Hint: ${movie.hint}`;
+  hintBox.className = 'hint-box visible';
+  document.getElementById('hint-btn').disabled = true;
+}
+
+function nextMovie() {
+  currentIdx++;
+  document.getElementById('guess-btn').textContent = 'Guess';
+  renderHistory();
+  loadMovie();
+}
+
+function updateScore() {
+  document.getElementById('total-score').textContent = totalScore;
+  document.getElementById('streak').textContent = streak;
+  document.getElementById('best-streak').textContent = bestStreak;
+}
+
+function renderHistory() {
+  const cont = document.getElementById('history');
+  // Clear and rebuild
+  cont.innerHTML = '<div class="history-title">Answered</div>';
+  [...history].reverse().forEach(h => {
+    const div = document.createElement('div');
+    div.className = 'history-item';
+    div.innerHTML = `
+      <div class="history-emoji">${h.emojis}</div>
+      <div class="history-movie">${h.movie}</div>
+      <div class="history-result ${h.result}">${h.result === 'correct' ? '✅ Correct' : '⏭ Skipped'}</div>
+      <div class="history-points">${h.pts > 0 ? '+' + h.pts : '—'}</div>
+    `;
+    cont.appendChild(div);
+  });
+}
+
+function endGame() {
+  const card = document.getElementById('game-card');
+  const maxPossible = queue.slice(0, TOTAL_ROUNDS).reduce((s, m) => s + m.points, 0);
+  const pct = Math.round((totalScore / maxPossible) * 100);
+  let rating, ratingEmoji;
+  if (pct >= 90) { rating = 'Cinephile Legend'; ratingEmoji = '🏆'; }
+  else if (pct >= 70) { rating = 'Film Buff'; ratingEmoji = '🎬'; }
+  else if (pct >= 50) { rating = 'Casual Viewer'; ratingEmoji = '🍿'; }
+  else if (pct >= 30) { rating = 'Occasional Watcher'; ratingEmoji = '📺'; }
+  else { rating = 'Emoji Novice'; ratingEmoji = '😅'; }
+
+  card.innerHTML = `
+    <div class="game-over">
+      <div class="rating">${ratingEmoji}</div>
+      <div class="game-over-title">Game Over</div>
+      <div class="game-over-score">${totalScore}</div>
+      <div class="game-over-sub">points scored · ${pct}% efficiency · best streak: ${bestStreak}</div>
+      <div style="font-size:18px; color: var(--accent); margin-bottom:24px; font-weight:600;">${ratingEmoji} ${rating}</div>
+      <button class="btn-restart" onclick="restartGame()">🎬 Play Again</button>
+    </div>
+  `;
+  document.getElementById('progress-row').innerHTML = '';
+}
+
+function restartGame() {
+  currentIdx = 0;
+  totalScore = 0;
+  streak = 0;
+  bestStreak = 0;
+  history = [];
+  queue = buildQueue();
+  updateScore();
+  renderHistory();
+
+  document.getElementById('game-card').innerHTML = `
+    <div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:8px;">
+      <div class="difficulty-badge" id="diff-badge">Easy</div>
+      <div class="points-badge">Worth <span id="points-worth">—</span> pts</div>
+    </div>
+    <div class="emoji-display" id="emoji-display">🎬</div>
+    <div class="hint-text" id="clue-type"></div>
+    <div class="hint-box" id="hint-box"></div>
+    <div class="input-row">
+      <input type="text" class="guess-input" id="guess-input" placeholder="Type your guess…" autocomplete="off" />
+      <button class="btn-primary" id="guess-btn" onclick="submitGuess()">Guess</button>
+    </div>
+    <div class="feedback" id="feedback"></div>
+    <div class="controls-row" style="margin-top:14px;">
+      <button class="btn-hint" id="hint-btn" onclick="showHint()">💡 Hint (−25%)</button>
+      <button class="btn-skip" onclick="skipMovie()">Skip →</button>
+    </div>
+  `;
+
+  document.getElementById('guess-input').addEventListener('keydown', e => { if (e.key === 'Enter') submitGuess(); });
+  loadMovie();
+}
+
+// Init
+document.addEventListener('DOMContentLoaded', () => {
+  queue = buildQueue();
+  loadMovie();
+  document.getElementById('guess-input').addEventListener('keydown', e => {
+    if (e.key === 'Enter') submitGuess();
+  });
+});
+</script>
+</body>
+</html>
